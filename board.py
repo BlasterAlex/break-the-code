@@ -57,15 +57,11 @@ class Board:
 
     def simulate(self, hint: str) -> Tuple[float, float]:
         """Return the average % of filtered combinations, and the standard deviation."""
-        results = []
-        for _ in range(ut.SIMULATION_ITERATIONS):
-            opponent_fcombinations = copy.deepcopy(self._opponent_fcombinations)
-            before_filtering = len(opponent_fcombinations)
-            sample_fcombination = random.choice(opponent_fcombinations)
-            sample_answer = ut.HINTS[hint]['function'](sample_fcombination)
-            opponent_fcombinations = [fcombination for fcombination in opponent_fcombinations
-                                      if ut.HINTS[hint]['function'](fcombination) == sample_answer]
-            after_filtering = len(opponent_fcombinations)
-            percentage_filtered = (before_filtering - after_filtering) / before_filtering
-            results.append(percentage_filtered)
-        return sum(results) / len(results), statistics.stdev(results) * 100
+        
+        opponent_fcombinations = self.get_opponent_fcombinations()
+        answers = [ut.HINTS[hint]['function'](fcombination) for fcombination in opponent_fcombinations]
+        answers_count = {answer:answers.count(answer) for answer in answers}
+
+        current_count = len(opponent_fcombinations)
+        percentage_filtered = [(current_count - count) / current_count for _, count in answers_count.items()]
+        return sum(percentage_filtered) / len(percentage_filtered), statistics.stdev(percentage_filtered) * 100
