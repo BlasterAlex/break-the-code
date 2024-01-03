@@ -64,4 +64,5 @@ class Board:
 
         current_count = len(opponent_fcombinations)
         percentage_filtered = [(current_count - count) / current_count for _, count in answers_count.items()]
-        return sum(percentage_filtered) / len(percentage_filtered), statistics.stdev(percentage_filtered) * 100
+        stdev_filtered = 0 if len(percentage_filtered) < 2 else statistics.stdev(percentage_filtered) * 100
+        return sum(percentage_filtered) / len(percentage_filtered), stdev_filtered
