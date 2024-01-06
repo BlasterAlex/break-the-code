@@ -111,6 +111,43 @@ def ask_user_combination(players: int = 2) -> Tuple[str, ...]:
     return tuple(tiles)
 
 
+def ask_opponent_number(players: int = 2) -> int:
+    """Ask the user for the opponent's number and return it."""
+    if players < 3:
+        return -1
+    
+    while True:
+        choice = input('Enter opponent number [leave empty for central]: ')
+        if len(choice) == 0:
+            return -1
+        
+        try:
+            opponent = int(choice)
+        except ValueError:
+            print(f'Error: Value \'{choice}\' must be an integer')
+            continue
+
+        if opponent < 1:
+            opponent = 1
+        elif opponent > players-1:
+            opponent = players-1
+        return opponent-1
+
+
+def get_fcombination_positions(fcombinations: List[Tuple[int, ...]], players: int = 2):
+    """Returns tile possibilities per position."""
+    positions = [set() for _ in range(5 if players < 4 else 4)]
+
+    for fcombination in fcombinations:
+        for index, ftile in enumerate(fcombination):
+            position = positions[index]
+            if (ftile == 10 and 11 in position) or (ftile == 11 and 10 in position):
+                continue
+            position.add(ftile)
+
+    return positions
+
+
 def display_main_menu(our_fcombination: Tuple[int, ...],
                       central_fcombinations: List[Tuple[int, ...]],
                       opponents_fcombinations: list[List[Tuple[int, ...]]],
@@ -178,7 +215,9 @@ def display_main_menu(our_fcombination: Tuple[int, ...],
             print('\nNo simulation data (or the data is outdated)')
         else:
             print('\nSimulation data (average % combinations filtered, standard deviation):')
-            for simulation in simulations:
+            sorted_sumulations = sorted(simulations, key=lambda simulation: (
+                round(simulation[1][0], 2), -simulation[1][1]), reverse=True)
+            for simulation in sorted_sumulations:
                 print('- ' +
                       f'{ut.HINTS[simulation[0]]["description"]:<45}' +
                       f'{simulation[1][0]:<5.1%} ({simulation[1][1]:.1f})')
@@ -193,19 +232,6 @@ def display_main_menu(our_fcombination: Tuple[int, ...],
             break
 
     return choice
-
-
-def get_fcombination_positions(fcombinations: List[Tuple[int, ...]], players: int = 2):
-    positions = [set() for _ in range(5 if players < 4 else 4)]
-
-    for fcombination in fcombinations:
-        for index, ftile in enumerate(fcombination):
-            position = positions[index]
-            if (ftile == 10 and 11 in position) or (ftile == 11 and 10 in position):
-                continue
-            position.add(ftile)
-
-    return positions
 
 
 def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[str, ...]]] | None:

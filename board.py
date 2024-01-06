@@ -47,43 +47,28 @@ class Board:
         return [fcombination for fcombination in fcombinations
                 if ut.HINTS[hint]['function'](fcombination) == answer]
 
-    def _filter_conflict_combinations(self,
-                                      fcombinations: List[Tuple[int, ...]],
-                                      target_fcombinations: List[Tuple[int, ...]]) -> List[Tuple[int, ...]]:
-        """Return the filtered fcombinations."""
+    def _filter_known_tiles(self,
+                            fcombinations: List[Tuple[int, ...]],
+                            target_fcombinations: List[Tuple[int, ...]]) -> List[Tuple[int, ...]]:
+        """Returns the filtered fcombinations without known tiles in the target fcombinations."""
         if len(target_fcombinations) == 0:
             return fcombinations
         
-        matched_tiles = set.intersection(*[set(fcomb) for fcomb in target_fcombinations])
-        if len(matched_tiles) == 0:
+        known_tiles = set.intersection(*[set(fcomb) for fcomb in target_fcombinations])
+        if len(known_tiles) == 0:
             return fcombinations
         
         filtered_fcombinations = []            
         for fcombination in fcombinations:
-            ok = True
-            for matched_tile in matched_tiles:
+            is_ok = True
+            for matched_tile in known_tiles:
                 if matched_tile in fcombination:
-                    ok = False
+                    is_ok = False
                     break
-            if ok:
+            if is_ok:
                 filtered_fcombinations.append(tuple(fcombination))
         
         return filtered_fcombinations
-
-    def _try_to_apply_combination(self,
-                                  combination: Tuple[int, ...],
-                                  opponent: int = 0) -> bool:
-        
-        other_opponent_numbers = [num for num in range(len(self._opponents_fcombinations)) if num != opponent]
-        other_opponent_combinations = [self.get_opponent_fcombinations(opponent_num) for opponent_num in other_opponent_numbers]
-        filtered_opponent_combinations = [self._filter_conflict_combinations(opponent_combinations, [combination]) for opponent_combinations in other_opponent_combinations]
-
-        if len(filtered_opponent_combinations) < 2:
-            possible_opponent_combinations = filtered_opponent_combinations[0]
-        else:
-            possible_opponent_combinations = self._filter_conflict_combinations(filtered_opponent_combinations[0], filtered_opponent_combinations[1])
-        
-        return len(possible_opponent_combinations) > 0
 
     def get_central_fcombinations(self) -> List[Tuple[int, ...]]:
         """Return the possible central fcombinations."""
@@ -103,35 +88,49 @@ class Board:
                                                            hint,
                                                            answer)
 
-        if len(self._opponents_fcombinations) > 1:
-            filtered_fcombinations = []
-            for opponent_fcombination in opponent_fcombinations:
-                if self._try_to_apply_combination(opponent_fcombination, opponent):
-                    filtered_fcombinations.append(opponent_fcombination)
-            opponent_fcombinations = filtered_fcombinations
+        if len(self._opponents_fcombinations) == 1:
+            self._central_fcombinations = opponent_fcombinations
+            self._opponents_fcombinations[opponent] = opponent_fcombinations
+            return
+
+        other_opponent_numbers = [num for num in range(len(self._opponents_fcombinations)) if num != opponent]
+        other_opponent_fcombinations = [self.get_opponent_fcombinations(opponent_num) for opponent_num in other_opponent_numbers]
+        
+        filtered_fcombinations = []
+        for opponent_fcombination in opponent_fcombinations:
+            filtered_opponent_combinations = [self._filter_known_tiles(other_fcombinations, [
+                                                                        opponent_fcombination]) for other_fcombinations in other_opponent_fcombinations]
+            if len(filtered_opponent_combinations) < 2:
+                possible_opponent_combinations = filtered_opponent_combinations[0]
+            else:
+                possible_opponent_combinations = self._filter_known_tiles(filtered_opponent_combinations[0], filtered_opponent_combinations[1])
+            if len(possible_opponent_combinations) > 0:
+                filtered_fcombinations.append(opponent_fcombination)
+        opponent_fcombinations = filtered_fcombinations
 
         for index, fcombinations in enumerate(self._opponents_fcombinations):
             if index == opponent:
                 self._opponents_fcombinations[index] = opponent_fcombinations
             else:
-                self._opponents_fcombinations[index] = self._filter_conflict_combinations(fcombinations,
-                                                                                          opponent_fcombinations)
+                self._opponents_fcombinations[index] = self._filter_known_tiles(fcombinations,
+                                                                                opponent_fcombinations)
 
-        if len(self._opponents_fcombinations) == 1:
-            self._central_fcombinations = opponent_fcombinations
-        else:
-            for fcombinations in self._opponents_fcombinations:
-                self._central_fcombinations = self._filter_conflict_combinations(self._central_fcombinations,
-                                                                                fcombinations)
+        for fcombinations in self._opponents_fcombinations:
+            self._central_fcombinations = self._filter_known_tiles(self._central_fcombinations,
+                                                                   fcombinations)
 
     def simulate(self, hint: str) -> Tuple[float, float]:
         """Return the average % of filtered combinations, and the standard deviation."""
-        
-        opponent_fcombinations = self.get_central_fcombinations()
-        answers = [ut.HINTS[hint]['function'](fcombination) for fcombination in opponent_fcombinations]
-        answers_count = {answer:answers.count(answer) for answer in answers}
+        mean_filtered = []
+        stdev_filtered = []
 
-        current_count = len(opponent_fcombinations)
-        percentage_filtered = [(current_count - count) / current_count for _, count in answers_count.items()]
-        stdev_filtered = 0 if len(percentage_filtered) < 2 else statistics.stdev(percentage_filtered) * 100
-        return sum(percentage_filtered) / len(percentage_filtered), stdev_filtered
+        for opponent_fcombinations in self.get_opponents_fcombinations():
+            answers = [ut.HINTS[hint]['function'](fcombination) for fcombination in opponent_fcombinations]
+            answers_count = {answer:answers.count(answer) for answer in answers}
+
+            current_count = len(opponent_fcombinations)
+            percentage_filtered = [(current_count - count) / current_count for _, count in answers_count.items()]
+            mean_filtered.append(0 if len(percentage_filtered) < 1 else statistics.mean(percentage_filtered))
+            stdev_filtered.append(0 if len(percentage_filtered) < 2 else statistics.stdev(percentage_filtered) * 100)
+
+        return statistics.mean(mean_filtered), statistics.mean(stdev_filtered)

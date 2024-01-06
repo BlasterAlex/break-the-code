@@ -55,9 +55,7 @@ while True:
                     if hint not in [simulation[0] for simulation in simulations]:
                         simulations.append((hint, board.simulate(hint)))
         case 'c':
-            opponent = -1
-            if players > 2:
-                opponent = int(input('Enter opponent number: '))
+            opponent = mn.ask_opponent_number(players)
             if opponent == -1:
                 mn.display_combinations_menu(board.get_central_fcombinations())
             else: 
