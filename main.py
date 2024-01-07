@@ -18,25 +18,34 @@ import combination as cb
 import menu as mn
 
 
-combination = mn.ask_user_combination()
+players = mn.ask_number_of_players()
+combination = mn.ask_user_combination(players)
 fcombination = cb.combination_to_fcombination(combination)
-board = bd.Board(combination)
+board = bd.Board(combination, players)
 hints = []  # type: List[Tuple[str, int]]
 simulations = []  # type: List[Tuple[str, Tuple[float, float]]]
 while True:
     choice = mn.display_main_menu(fcombination,
-                                  board.get_opponent_fcombinations(),
+                                  board.get_central_fcombinations(),
+                                  board.get_opponents_fcombinations(),
                                   hints,
                                   simulations)
     match choice:
         case 'h':
-            hint = mn.display_hints_menu()
+            hint = mn.display_hints_menu(players)
             if hint is not None:
-                num_opponent_combs_before = len(board.get_opponent_fcombinations())
-                board.apply_hint(hint[0], hint[1])
-                num_opponent_combs_after = len(board.get_opponent_fcombinations())
-                improvement = num_opponent_combs_before - num_opponent_combs_after
-                hints.append((hint, improvement))
+                hint_name = hint[0]
+                hint_results = []
+
+                num_opponent_combs_before = [len(opponent_combs) for opponent_combs in board.get_opponents_fcombinations()]
+                board.apply_hint(hint_name, hint[1])
+                
+                for opponent, hint_result in enumerate(hint[1]):
+                    num_opponent_combs_after = len(board.get_opponent_fcombinations(opponent))
+                    improvement = num_opponent_combs_before[opponent] - num_opponent_combs_after
+                    hint_results.append((hint_result, improvement))
+
+                hints.append((hint_name, hint_results))
                 simulations = []
         case 's':
             hints_to_simulate = mn.display_simulation_menu()
@@ -44,15 +53,20 @@ while True:
                 for hint in hints_to_simulate:
                     if hint not in [simulation[0] for simulation in simulations]:
                         simulations.append((hint, board.simulate(hint)))
+                simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
         case 'c':
-            mn.display_combinations_menu(board.get_opponent_fcombinations())
+            opponent = mn.ask_opponent_number(players)
+            if opponent == -1:
+                mn.display_combinations_menu(board.get_central_fcombinations())
+            else: 
+                mn.display_combinations_menu(board.get_opponent_fcombinations(opponent))
         case 'u':
             if len(hints) > 0:
                 hints.pop()
                 simulations = []
-            board = bd.Board(combination)
+            board = bd.Board(combination, players)
             for hint in hints:
-                board.apply_hint(hint[0][0], hint[0][1])
+                board.apply_hint(hint[0], [res[0] for res in hint[1]])
         case 'q':
             really = input('Really quit? Press \'y\' to quit, anything else to go back: ')
             if really.lower() == 'y':

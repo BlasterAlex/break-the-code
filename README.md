@@ -1,6 +1,6 @@
 # Break the Code Helper
 
-This program is an interactive helper for the 2-player version of the game [Break the Code](https://boardgamegeek.com/boardgame/227466/break-code) that can be played online on [Board Game Arena](https://boardgamearena.com/gamepanel?game=breakthecode).
+This program is an interactive helper for the game [Break the Code](https://boardgamegeek.com/boardgame/227466/break-code) that can be played online on [Board Game Arena](https://boardgamearena.com/gamepanel?game=breakthecode).
 
 
 ## Features
@@ -13,10 +13,15 @@ This program is an interactive helper for the 2-player version of the game [Brea
 
 ## Tips
 
-- You can improve the simulator accuracy by increasing the value of variable `SIMULATION_ITERATIONS` in file `utils.py` (but computing the results will take more time).
 - Learn the hint shortcuts!
 
 
-## Screenshot
+## Screenshots
 
-![screenshot](screenshot.png)
+2-player game:
+
+![screenshot](screenshot-2-players.png)
+
+3- or 4-player game:
+
+![screenshot](screenshot-4-players.png)
