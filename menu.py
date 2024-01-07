@@ -102,7 +102,7 @@ def ask_user_combination(players: int = 2) -> Tuple[str, ...]:
                 print(f'Error: Tile {tile} is not recognized as a valid tile')
                 break
         if (len(set(tiles)) < 4) and \
-            (tiles.count('5g') != 2):
+           (tiles.count('5g') != 2):
             print('Error: Only the 5 tile can be specified twice')
             break
         # If we reach this point, the tiles are valid
@@ -150,7 +150,7 @@ def get_fcombination_positions(fcombinations: List[Tuple[int, ...]], players: in
 
 def display_main_menu(our_fcombination: Tuple[int, ...],
                       central_fcombinations: List[Tuple[int, ...]],
-                      opponents_fcombinations: list[List[Tuple[int, ...]]],
+                      opponents_fcombinations: List[List[Tuple[int, ...]]],
                       hints: List[Tuple[str, List[Tuple[str, int]]]],
                       simulations: List[Tuple[str, Tuple[float, float]]]) -> str:
     """Display the main menu and return a valid user choice."""
@@ -215,9 +215,7 @@ def display_main_menu(our_fcombination: Tuple[int, ...],
             print('\nNo simulation data (or the data is outdated)')
         else:
             print('\nSimulation data (average % combinations filtered, standard deviation):')
-            sorted_sumulations = sorted(simulations, key=lambda simulation: (
-                round(simulation[1][0], 2), -simulation[1][1]), reverse=True)
-            for simulation in sorted_sumulations:
+            for simulation in simulations:
                 print('- ' +
                       f'{ut.HINTS[simulation[0]]["description"]:<45}' +
                       f'{simulation[1][0]:<5.1%} ({simulation[1][1]:.1f})')
@@ -257,7 +255,7 @@ def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[st
 
         match choice:
             case _ as choice if choice in ('st', 'sb', 'sw', 'sl', 'sr', 'sc',
-                                        'te', 'to', 'tb', 'tw', 'ts', 'd'):
+                                           'te', 'to', 'tb', 'tw', 'ts', 'd'):
                 while True:
                     subchoice = input(input_prefix + ut.HINTS[choice]['description'] + ': ')
                     try:
@@ -278,11 +276,11 @@ def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[st
                 while True:
                     subchoice = input(input_prefix + 'Neighboring tile groups with same color (e.g.: ab de): ').lower()
                     if subchoice.split() not in ([],
-                                                ['ab'], ['bc'], ['cd'], ['de'],
-                                                ['ab', 'cd'], ['ab', 'de'], ['bc', 'de'],
-                                                ['abc'], ['bcd'], ['cde'],
-                                                ['abc', 'de'], ['ab', 'cde'],
-                                                ['abcd'], ['bcde'], ['abcde']):
+                                                 ['ab'], ['bc'], ['cd'], ['de'],
+                                                 ['ab', 'cd'], ['ab', 'de'], ['bc', 'de'],
+                                                 ['abc'], ['bcd'], ['cde'],
+                                                 ['abc', 'de'], ['ab', 'cde'],
+                                                 ['abcd'], ['bcde'], ['abcde']):
                         print(f'Error: The intervals(s) \'{subchoice}\' is/are not valid')
                         continue
                     subchoice = tuple(subchoice.split())
@@ -292,10 +290,10 @@ def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[st
                     subchoice = input(input_prefix + 'Neighboring tile groups with consecutive numbers '
                                     '(e.g.: ab de): ').lower()
                     if subchoice.split() not in ([],
-                                                ['ab'], ['bc'], ['cd'], ['de'],
-                                                ['ab', 'de'],
-                                                ['abc'], ['bcd'], ['cde'],
-                                                ['abcd'], ['bcde'], ['abcde']):
+                                                 ['ab'], ['bc'], ['cd'], ['de'],
+                                                 ['ab', 'de'],
+                                                 ['abc'], ['bcd'], ['cde'],
+                                                 ['abcd'], ['bcde'], ['abcde']):
                         print(f'Error: The intervals(s) \'{subchoice}\' is/are not valid')
                         continue
                     subchoice = tuple(subchoice.split())
