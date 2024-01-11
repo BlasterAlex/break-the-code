@@ -12,9 +12,9 @@ import utils as ut
 class Board:
     """Store information on possible opponent hands."""
 
-    def __init__(self, combination: Tuple[str, ...], players: int = 2) -> None:
+    def __init__(self, fcombination: Tuple[int, ...], players: int = 2) -> None:
         """Generate initial opponent hands."""
-        self._our_fcombination = cb.combination_to_fcombination(combination)
+        self._our_fcombination = fcombination
         # Generate the opponent fcombinations
         self._central_fcombinations = self._generate_opponent_fcombinations(players)
         self._opponents_fcombinations = [self.get_central_fcombinations() for _ in range(1, players)]
@@ -59,12 +59,10 @@ class Board:
         
         filtered_fcombinations = []            
         for fcombination in fcombinations:
-            is_ok = True
             for matched_tile in known_tiles:
                 if matched_tile in fcombination:
-                    is_ok = False
                     break
-            if is_ok:
+            else:
                 filtered_fcombinations.append(tuple(fcombination))
         return filtered_fcombinations
 
@@ -80,50 +78,42 @@ class Board:
         """Return the possible fcombinations of the opponent."""
         return copy.deepcopy(self._opponents_fcombinations[opponent])
 
-    def apply_hint(self, hint: str, answers: List[int | str | List[str]]) -> None:
+    def apply_hint(self, hint: str, answer: int | str | List[str], opponent: int = 0) -> None:
         """Apply a hint on the current board state."""
-        if len(answers) == 0:
-            return
-
-        opponents_fcombinations = []
-        for opponent, answer in enumerate(answers):
-            opponents_fcombinations.append(self._filter_combinations(self.get_opponent_fcombinations(opponent),
-                                                                     hint,
-                                                                     answer))
+        opponent_fcombinations = self._filter_combinations(self.get_opponent_fcombinations(opponent),
+                                                           hint,
+                                                           answer)
 
         opponents = len(self._opponents_fcombinations)
         if opponents == 1:
-            self._central_fcombinations = opponents_fcombinations[0]
-            self._opponents_fcombinations[0] = opponents_fcombinations[0]
+            self._central_fcombinations = opponent_fcombinations
+            self._opponents_fcombinations[0] = opponent_fcombinations
             return
 
-        for opponent, opponent_fcombinations in enumerate(opponents_fcombinations):
-            other_opponent_numbers = [opp for opp in range(opponents) if opp != opponent]
-            other_opponent_fcombinations = [self.get_opponent_fcombinations(opp) for opp in other_opponent_numbers]
-            
-            filtered_fcombinations = []
-            for opponent_fcombination in opponent_fcombinations:
-                filtered_opponent_combinations = [self._filter_known_tiles(
-                    fcomb, [opponent_fcombination]) for fcomb in other_opponent_fcombinations]
+        other_opponent_numbers = [opp for opp in range(opponents) if opp != opponent]
+        other_opponent_fcombinations = [self.get_opponent_fcombinations(opp) for opp in other_opponent_numbers]
 
-                if len(filtered_opponent_combinations) < 2:
-                    possible_opponent_combinations = filtered_opponent_combinations[0]
-                else:
-                    possible_opponent_combinations = self._filter_known_tiles(
-                        filtered_opponent_combinations[0], filtered_opponent_combinations[1])
+        filtered_fcombinations = []
+        for opponent_fcombination in opponent_fcombinations:
+            filtered_opponent_combinations = [self._filter_known_tiles(
+                fcomb, [opponent_fcombination]) for fcomb in other_opponent_fcombinations]
 
-                if len(possible_opponent_combinations) > 0:
-                    filtered_fcombinations.append(opponent_fcombination)
-            
-            opponent_fcombinations = filtered_fcombinations
-            opponents_fcombinations[opponent] = opponent_fcombinations
+            if len(filtered_opponent_combinations) < 2:
+                possible_opponent_combinations = filtered_opponent_combinations[0]
+            else:
+                possible_opponent_combinations = self._filter_known_tiles(
+                    filtered_opponent_combinations[0], filtered_opponent_combinations[1])
 
-            for index, fcombinations in enumerate(self._opponents_fcombinations):
-                if index == opponent:
-                    self._opponents_fcombinations[index] = opponent_fcombinations
-                else:
-                    self._opponents_fcombinations[index] = self._filter_known_tiles(fcombinations,
-                                                                                    opponent_fcombinations)
+            if len(possible_opponent_combinations) > 0:
+                filtered_fcombinations.append(opponent_fcombination)
+
+        opponent_fcombinations = filtered_fcombinations
+        for index, fcombinations in enumerate(self._opponents_fcombinations):
+            if index == opponent:
+                self._opponents_fcombinations[index] = opponent_fcombinations
+            else:
+                self._opponents_fcombinations[index] = self._filter_known_tiles(fcombinations,
+                                                                                opponent_fcombinations)
 
         for fcombinations in self._opponents_fcombinations:
             self._central_fcombinations = self._filter_known_tiles(self._central_fcombinations,
@@ -144,3 +134,12 @@ class Board:
             stdev_filtered.append(0 if len(percentage_filtered) < 2 else statistics.stdev(percentage_filtered) * 100)
 
         return statistics.mean(mean_filtered), statistics.mean(stdev_filtered)
+    
+    def find_best_hint(self, hints: List[str]) -> str | None:
+        """Returns the best hint from the list."""
+        if len(hints) == 0:
+            return None
+        
+        simulations = [(hint, self.simulate(hint)) for hint in hints]
+        simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
+        return simulations[0][0]

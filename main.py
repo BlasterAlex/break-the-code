@@ -19,9 +19,8 @@ import menu as mn
 
 
 players = mn.ask_number_of_players()
-combination = mn.ask_user_combination(players)
-fcombination = cb.combination_to_fcombination(combination)
-board = bd.Board(combination, players)
+fcombination = cb.combination_to_fcombination(mn.ask_user_combination(players))
+board = bd.Board(fcombination, players)
 hints = []  # type: List[Tuple[str, int]]
 simulations = []  # type: List[Tuple[str, Tuple[float, float]]]
 while True:
@@ -37,9 +36,10 @@ while True:
                 hint_name = hint[0]
                 hint_results = []
 
-                num_opponent_combs_before = [len(opponent_combs) for opponent_combs in board.get_opponents_fcombinations()]
-                board.apply_hint(hint_name, hint[1])
-                
+                num_opponent_combs_before = [len(opponent_combs) for opponent_combs in board.get_opponents_fcombinations()]                                
+                for opponent, hint_result in enumerate(hint[1]):
+                    board.apply_hint(hint_name, hint_result, opponent)
+
                 for opponent, hint_result in enumerate(hint[1]):
                     num_opponent_combs_after = len(board.get_opponent_fcombinations(opponent))
                     improvement = num_opponent_combs_before[opponent] - num_opponent_combs_after
@@ -64,9 +64,10 @@ while True:
             if len(hints) > 0:
                 hints.pop()
                 simulations = []
-            board = bd.Board(combination, players)
+            board = bd.Board(fcombination, players)
             for hint in hints:
-                board.apply_hint(hint[0], [res[0] for res in hint[1]])
+                for opponent, res in enumerate(hint[1]):
+                    board.apply_hint(hint[0], res[0], opponent)
         case 'q':
             really = input('Really quit? Press \'y\' to quit, anything else to go back: ')
             if really.lower() == 'y':
