@@ -48,7 +48,7 @@ while True:
                 hints.append((hint_name, hint_results))
                 simulations = []
         case 's':
-            hints_to_simulate = mn.display_simulation_menu()
+            hints_to_simulate = mn.display_simulation_menu(players)
             if hints_to_simulate is not None:
                 for hint in hints_to_simulate:
                     if hint not in [simulation[0] for simulation in simulations]:

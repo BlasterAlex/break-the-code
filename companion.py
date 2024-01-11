@@ -21,9 +21,12 @@ MAIN_MENU = """(h) Add hint
 """
 
 def ask_number_of_people(players: int = 2) -> int:
-    """Ask the user for the number of human players and return it."""
+    """Ask the user for the number of people in game and return it."""
+    if players == 2:
+        return 1
+
     while True:
-        choice = input('Enter number of people in game: ')
+        choice = input('Enter number of people: ')
         try:
             people = int(choice)
         except ValueError:
@@ -102,13 +105,7 @@ def display_main_menu(players: int,
         else:
             print('\nCurrent hints:')
             for hint in hints:
-                results = hint[1]
-                if all(isinstance(n, Tuple) for n in results):
-                    results = [f"({', '.join(r)})" for r in results]
-                elif all(isinstance(n, str) for n in results):
-                    results = [r if len(r) > 0 else "-" for r in results]
-
-                results = ', '.join([f'{r}' for r in results])
+                results = ', '.join(mn.hint_result_as_str(r) for r in hint[1])
                 print('- ' + ut.HINTS[hint[0]]['description'] + f': {results}')
 
         print('\nOptions:')
@@ -117,20 +114,20 @@ def display_main_menu(players: int,
         if choice is not None:
             print(f'Error: There is no \'{choice}\' option')
         choice = input('Choose option: ')
-        if choice in ('h', 'c', 'u', 'q'):
+        if choice in ('h', 'u', 'c', 'q'):
             break
 
     return choice
 
 
-def display_hints_menu() -> str | None:
+def display_hints_menu(players: int = 2) -> str | None:
     """Display the hints menu and return a valid hint"""
     choice = None
 
     while True:
         mn.clear_screen()
         print(TITLE)
-        print(mn.HINT_SHORTCUTS)
+        print(mn.get_hint_shortcuts(players))
 
         if choice is not None:
             print(f'Error: The hint \'{choice}\' is not valid')
@@ -149,8 +146,9 @@ def display_combinations_menu(players: int,
     print(TITLE)
 
     if players == 2:
-        print('Enter your answer')
-        fcombination = cb.combination_to_fcombination(mn.ask_user_combination(players))
+        fcombination = cb.combination_to_fcombination(mn.ask_user_combination(
+            players,
+            prompt='Enter your answer, separated by spaces'))
 
         # Case central combination has one 5 tile
         if 11 in central_fcombination and 10 not in central_fcombination:
@@ -177,6 +175,7 @@ def display_combinations_menu(players: int,
 
 players = mn.ask_number_of_players()
 people = ask_number_of_people(players)
+
 people_fcombinations = ask_player_fcombinations(players, people)
 central_fcombination, bot_fcombinations = distribute_remaining_tiles(
     players, people_fcombinations)
@@ -189,7 +188,7 @@ while True:
                                hints)
     match choice:
         case 'h':
-            hint = display_hints_menu()
+            hint = display_hints_menu(players)
             if hint is not None:
                 results = [ut.HINTS[hint]['function'](fcomb) for fcomb in bot_fcombinations]
                 hints.append((hint, results))
