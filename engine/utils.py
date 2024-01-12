@@ -1,7 +1,7 @@
 """Utilities and constants."""
 
 
-import hint as ht
+import engine.hint as ht
 
 
 # The tiles must be ordered in ascending order. If two tiles are of the same rank but of a different

@@ -20,8 +20,8 @@ This program is an interactive helper for the game [Break the Code](https://boar
 
 2-player game:
 
-![screenshot](screenshot-2-players.png)
+![screenshot](docs/images/screenshot-2-players.png)
 
 3- or 4-player game:
 
-![screenshot](screenshot-4-players.png)
+![screenshot](docs/images/screenshot-4-players.png)

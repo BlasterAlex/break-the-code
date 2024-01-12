@@ -1,14 +1,16 @@
 """Break the Code Companion."""
 
+
 from typing import List, Tuple
 import itertools
 import random
 import sys
 
-import combination as cb
-import menu as mn
-import utils as ut
-import board as bd
+import engine.combination as cb
+import engine.menu as mn
+import engine.utils as ut
+import engine.board as bd
+
 
 TITLE = """================================
 === Break the Code Companion ===
@@ -21,6 +23,8 @@ MAIN_MENU = """(h) Add hint
 (q) Quit
 """
 
+HUMAN_COLOR = '\x1b[0;30;42m'
+BOT_COLOR = '\x1b[0;30;46m'
 HUMAN_ICON = '🧑'
 BOT_ICON = '🤖'
 
@@ -103,15 +107,16 @@ def apply_hint_to_bots(players: int,
         bot = bot_players[index]
         other_players = [p for p in range(players) if p != bot]
         for result in results:
-            player = result[0]
-            answer = result[1]
+            player, answer = result
             if player != bot:
                 opponent = other_players.index(player)
-                board.apply_hint(hint, answer, opponent) 
+                board.apply_hint(hint, answer, opponent)
+        bot_games[index] = board
 
 
 def display_main_menu(players: int,
                       player_names: Tuple[str],
+                      bot_games: List[bd.Board],
                       bot_fcombinations: List[Tuple[int, ...]],
                       hints: List[Tuple[str, List[Tuple[int, int | str | Tuple[str, ...]]]]]) -> str:
     """Display the main menu and return a valid user choice."""
@@ -120,7 +125,12 @@ def display_main_menu(players: int,
         mn.clear_screen()
         print(TITLE)
         print(f'{players}-player game')
-        print(f'{HUMAN_ICON}: {players-len(bot_fcombinations)} {BOT_ICON}: {len(bot_fcombinations)}')
+        print(f'{HUMAN_COLOR + HUMAN_ICON + ut.END_COLOR}: {players-len(bot_fcombinations)}',
+              f'{BOT_COLOR + BOT_ICON + ut.END_COLOR}: {len(bot_fcombinations)}')
+
+        print()
+        for index, bot_game in enumerate(bot_games):
+            print(f'Bot {index+1} combinations: {len(bot_game.get_central_fcombinations())}')
 
         if len(hints) == 0:
             print('\nNo hints yet')
@@ -249,8 +259,8 @@ people = ask_number_of_people(players)
 
 human_players = tuple(range(people))
 bot_players = tuple(range(len(human_players), players))
-player_names = tuple((f'{p+1}' if len(human_players) > 1 else '') + HUMAN_ICON for p in range(len(human_players))) + \
-    tuple((f'{b+1}' if len(bot_players) > 1 else '') + BOT_ICON for b in range(len(bot_players)))
+player_names = tuple(HUMAN_COLOR + (f'{p+1}' if len(human_players) > 1 else '') + HUMAN_ICON + ut.END_COLOR for p in range(len(human_players))) + \
+    tuple(BOT_COLOR + (f'{b+1}' if len(bot_players) > 1 else '') + BOT_ICON + ut.END_COLOR for b in range(len(bot_players)))
 
 people_fcombinations = ask_player_fcombinations(players, people)
 central_fcombination, bot_fcombinations = distribute_remaining_tiles(
@@ -262,6 +272,7 @@ bot_games = [bd.Board(fc, players) for fc in bot_fcombinations]
 while True:
     choice = display_main_menu(players,
                                player_names,
+                               bot_games,
                                bot_fcombinations,
                                hints)
     match choice:
@@ -274,8 +285,11 @@ while True:
             if player in human_players:
                 hint = display_opponent_hints_menu(players)
             elif player in bot_players:
-                hints = display_bot_hints_menu(players)
-                hint = bot_games[bot_players.index(player)].find_best_hint(hints)
+                bot_hints = display_bot_hints_menu(players)
+                bot_game = bot_games[bot_players.index(player)]
+                simulations = [(hint, bot_game.simulate(hint)) for hint in bot_hints]
+                simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
+                hint = simulations[0][0]
 
             if hint is not None:
                 results = []

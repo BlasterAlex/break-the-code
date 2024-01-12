@@ -2,7 +2,7 @@
 
 
 from typing import Tuple
-import utils as ut
+import engine.utils as ut
 
 
 def combination_to_fcombination(combination: Tuple[str, ...]) -> Tuple[int, ...]:

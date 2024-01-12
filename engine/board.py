@@ -5,8 +5,7 @@ import copy
 import itertools
 import statistics
 from typing import List, Tuple
-import combination as cb
-import utils as ut
+import engine.utils as ut
 
 
 class Board:
@@ -134,12 +133,3 @@ class Board:
             stdev_filtered.append(0 if len(percentage_filtered) < 2 else statistics.stdev(percentage_filtered) * 100)
 
         return statistics.mean(mean_filtered), statistics.mean(stdev_filtered)
-    
-    def find_best_hint(self, hints: List[str]) -> str | None:
-        """Returns the best hint from the list."""
-        if len(hints) == 0:
-            return None
-        
-        simulations = [(hint, self.simulate(hint)) for hint in hints]
-        simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
-        return simulations[0][0]

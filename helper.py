@@ -11,11 +11,12 @@ of the tile (e.g., "2b" would be "5").
 """
 
 
-import sys
 from typing import List, Tuple
-import board as bd
-import combination as cb
-import menu as mn
+import sys
+
+import engine.board as bd
+import engine.combination as cb
+import engine.menu as mn
 
 
 players = mn.ask_number_of_players()
