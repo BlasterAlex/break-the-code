@@ -286,10 +286,11 @@ while True:
                 hint = display_opponent_hints_menu(players)
             elif player in bot_players:
                 bot_hints = display_bot_hints_menu(players)
-                bot_game = bot_games[bot_players.index(player)]
-                simulations = [(hint, bot_game.simulate(hint)) for hint in bot_hints]
-                simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
-                hint = simulations[0][0]
+                if bot_hints is not None:
+                    bot_game = bot_games[bot_players.index(player)]
+                    simulations = [(hint, bot_game.simulate(hint)) for hint in bot_hints]
+                    simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
+                    hint = simulations[0][0]
 
             if hint is not None:
                 results = []
