@@ -27,6 +27,9 @@ HUMAN_COLOR = '\x1b[0;30;42m'
 BOT_COLOR = '\x1b[0;30;46m'
 HUMAN_ICON = '🧑'
 BOT_ICON = '🤖'
+WINNING_MOVE = '✅ Win'
+LOSING_MOVE = '❌ Lose'
+
 
 def ask_number_of_people(players: int = 2) -> int:
     """Ask the user for the number of people in game and return it."""
@@ -101,8 +104,10 @@ def apply_hint_to_bots(players: int,
                        bot_players: Tuple[int],
                        bot_games: List[bd.Board],
                        hint: str,
-                       results: Tuple[int, int | str | Tuple[str, ...]]) -> None:
+                       results: List[Tuple[int, int | str | Tuple[str, ...]]]) -> None:
     """Apply hint results to bot games."""
+    if len(results) == 0:
+        return
     for index, board in enumerate(bot_games):
         bot = bot_players[index]
         other_players = [p for p in range(players) if p != bot]
@@ -116,9 +121,8 @@ def apply_hint_to_bots(players: int,
 
 def display_main_menu(players: int,
                       player_names: Tuple[str],
-                      bot_games: List[bd.Board],
                       bot_fcombinations: List[Tuple[int, ...]],
-                      hints: List[Tuple[str, List[Tuple[int, int | str | Tuple[str, ...]]]]]) -> str:
+                      hints: List[Tuple[int, str, List[Tuple[int, int | str | Tuple[str, ...]]]]]) -> str:
     """Display the main menu and return a valid user choice."""
     choice = None
     while True:
@@ -128,17 +132,19 @@ def display_main_menu(players: int,
         print(f'{HUMAN_COLOR + HUMAN_ICON + ut.END_COLOR}: {players-len(bot_fcombinations)}',
               f'{BOT_COLOR + BOT_ICON + ut.END_COLOR}: {len(bot_fcombinations)}')
 
-        print()
-        for index, bot_game in enumerate(bot_games):
-            print(f'Bot {index+1} combinations: {len(bot_game.get_central_fcombinations())}')
-
         if len(hints) == 0:
             print('\nNo hints yet')
         else:
             print('\nCurrent hints:')
+            max_width = max(len(player_names[h[0]]) for h in hints)
             for hint in hints:
-                results = ', '.join(f'{player_names[p]} {mn.hint_result_as_str(r)}' for p, r in hint[1])
-                print('- ' + ut.HINTS[hint[0]]['description'] + f': {results}')
+                player, hint_name, results = hint
+                if hint_name in (WINNING_MOVE, LOSING_MOVE):
+                    hint_results = hint_name
+                else:
+                    results = ', '.join(f'{player_names[p]} {mn.hint_result_as_str(r)}' for p, r in results)
+                    hint_results = ut.HINTS[hint_name]['description'] + f': {results}'
+                print(f'- {player_names[player].ljust(max_width)} ' + hint_results)
 
         print('\nOptions:')
         print(MAIN_MENU)
@@ -152,13 +158,19 @@ def display_main_menu(players: int,
     return choice
 
 
-def display_player_menu(player_names: Tuple[str]) -> int | None:
+def display_player_menu(player_names: Tuple[str],
+                        out_of_the_game: List[int]) -> int | None:
     """Display the player selection menu."""
     mn.clear_screen()
     print(TITLE)
     print('Select player whose turn it is:')
+
+    players_in_game = []
     for player, name in enumerate(player_names):
-        print(f'({player+1}) {name}')
+        if player not in out_of_the_game:
+            players_in_game.append(player)
+            option_num = len(players_in_game)
+            print(f'({option_num}) {name}')
     print('(q) Go back\n')
 
     while True:    
@@ -172,11 +184,11 @@ def display_player_menu(player_names: Tuple[str]) -> int | None:
             print(f'Error: Value \'{choice}\' must be an integer')
             continue
 
-        if not 0 < choice <= len(player_names):
+        if not 0 < choice <= len(players_in_game):
             print('Error: Enter the correct player number')
             continue
         
-        return choice-1
+        return players_in_game[choice-1]
 
 
 def display_opponent_hints_menu(players: int = 2) -> str | None:
@@ -267,30 +279,44 @@ central_fcombination, bot_fcombinations = distribute_remaining_tiles(
     players, people_fcombinations)
 
 hints = []
+out_of_the_game = []
 bot_games = [bd.Board(fc, players) for fc in bot_fcombinations]
 
 while True:
     choice = display_main_menu(players,
                                player_names,
-                               bot_games,
                                bot_fcombinations,
                                hints)
     match choice:
         case 'h':
-            player = display_player_menu(player_names)
-            if player is None:
+            player = display_player_menu(player_names, out_of_the_game)
+            if player is None or player in out_of_the_game:
                 continue
             
             hint = None
             if player in human_players:
                 hint = display_opponent_hints_menu(players)
             elif player in bot_players:
-                bot_hints = display_bot_hints_menu(players)
-                if bot_hints is not None:
-                    bot_game = bot_games[bot_players.index(player)]
-                    simulations = [(hint, bot_game.simulate(hint)) for hint in bot_hints]
-                    simulations = sorted(simulations, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
-                    hint = simulations[0][0]
+                bot_game = bot_games[bot_players.index(player)]
+                if len(bot_game.get_central_fcombinations()) == 1:
+                    hint = WINNING_MOVE
+                elif len(out_of_the_game) > 0:
+                    hint = LOSING_MOVE
+                else:
+                    bot_hints = display_bot_hints_menu(players)
+                    if bot_hints is not None:
+                        if len(bot_hints) > 0:
+                            if len(bot_hints) == 1:
+                                hint = bot_hints[0]
+                            else:
+                                sim = [(hint, bot_game.simulate(hint)) for hint in bot_hints]
+                                sim = sorted(sim, key=lambda s: (round(s[1][0], 2), -s[1][1]), reverse=True)
+                                hint = sim[0][0]
+
+            if hint in (WINNING_MOVE, LOSING_MOVE):
+                hints.append((player, hint, []))
+                out_of_the_game.append(player)
+                continue
 
             if hint is not None:
                 results = []
@@ -302,14 +328,15 @@ while True:
                     bot = bot_players[index]
                     if players == 4 or bot != player:
                         results.append((bot, ut.HINTS[hint]['function'](fcomb)))
+
                 apply_hint_to_bots(players, bot_players, bot_games, hint, results)
-                hints.append((hint, results))
+                hints.append((player, hint, results))
         case 'u':
             if len(hints) > 0:
                 hints.pop()
             bot_games = [bd.Board(fc, players) for fc in bot_fcombinations]
             for hint in hints:
-                apply_hint_to_bots(players, bot_players, bot_games, hint[0], hint[1])
+                apply_hint_to_bots(players, bot_players, bot_games, hint[1], hint[2])
         case 'c':
             display_combinations_menu(players, central_fcombination, bot_fcombinations)
         case 'q':
