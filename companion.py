@@ -1,7 +1,7 @@
 """Break the Code Companion."""
 
 
-from typing import List, Tuple
+from typing import List, Tuple, Set
 import itertools
 import random
 import sys
@@ -161,8 +161,11 @@ def display_main_menu(players: int,
 
 
 def display_player_menu(player_names: Tuple[str, ...],
-                        out_of_the_game: Tuple[int, ...]) -> int | None:
-    """Display the player selection menu."""
+                        out_of_the_game: Set[int]) -> int | None:
+    """Display the player selection menu."""   
+    if len(player_names) == 2:
+        return player_names[0]
+    
     mn.clear_screen()
     print(TITLE)
     print('Select player whose turn it is:')
@@ -233,13 +236,17 @@ def display_bot_hints_menu(players: int = 2) -> Tuple[str, ...] | None:
             return tuple(hints)
 
 
-def display_combinations_menu(players: int,
+def display_combinations_menu(player_names: Tuple[str, ...],
+                              human_players: Tuple[int, ...],
+                              bot_players: Tuple[int, ...],
                               central_fcombination: Tuple[int, ...],
+                              people_fcombinations: List[Tuple[int, ...]],
                               bot_fcombinations: List[Tuple[int, ...]]) -> None:
     """Display the combinations menu."""
     mn.clear_screen()
     print(TITLE)
 
+    players = len(player_names)
     if players == 2:
         fcombination = cb.combination_to_fcombination(mn.ask_user_combination(
             players,
@@ -260,17 +267,22 @@ def display_combinations_menu(players: int,
         print('Central tiles:')
         print(mn.ftiles_as_colored_tiles(central_fcombination))
 
-        print('\nBot tiles:')
-        for bot, fcomb in enumerate(bot_fcombinations):
-            print(f'#{bot+1}: ', end='')
-            print(mn.ftiles_as_colored_tiles(fcomb))
+        print('\nPlayer tiles:')
+        for player, name in enumerate(player_names):
+            print(name + ': ', end='')
+            if player in human_players:
+                print(mn.ftiles_as_colored_tiles(
+                    people_fcombinations[human_players.index(player)]))
+            elif player in bot_players:
+                print(mn.ftiles_as_colored_tiles(
+                    bot_fcombinations[bot_players.index(player)]))
 
     input('\nPress \'[Enter]\' to go back.')
 
 
 def bot_makes_a_move(bot_games: List[bd.Board],
                      bot_players: Tuple[int, ...],
-                     winning_players: Tuple[int, ...]) -> str | None:
+                     winning_players: Set[int]) -> str | None:
     """The bot player takes a turn and returns the chosen hint."""
     hint = None
     bot_game = bot_games[bot_players.index(player)]
@@ -315,20 +327,18 @@ while True:
         case 'a':
             # Getting information from move history
             out, win = [], []
-            order = [h[0] for h in history]
             for h in history:
                 player, hint_name, results = h
                 if hint_name in ENDING_MOVES:
                     out.append(player)
                     if hint_name == WINNING_MOVE:
                         win.append(player)
-                        out.extend([p for p, r in results if r == LOSING_MOVE])
-            out_of_the_game, winning_players = tuple(sorted(out)), tuple(sorted(win))
-            player_order = tuple(sorted(set(order), key=order.index))
+                        out.extend([p for p, r in results if r in ENDING_MOVES])
+            out_of_the_game, winning_players = set(out), set(win)
 
             # Getting the number of player whose turn it is
             player = display_player_menu(player_names, out_of_the_game)
-            if player is None or player in out_of_the_game:
+            if player is None:
                 continue
             
             # Player makes a move
@@ -344,6 +354,8 @@ while True:
             if hint in ENDING_MOVES:
                 losers = []
                 if hint == WINNING_MOVE:
+                    order = [h[0] for h in history]
+                    player_order = tuple(sorted(set(order), key=order.index))
                     for bot in bot_players:
                         if player_order.index(bot) >= player_order.index(player):
                             break
@@ -367,7 +379,12 @@ while True:
             apply_hint_to_bots(players, bot_players, bot_games, hint, results)
             history.append((player, hint, results))
         case 'c':
-            display_combinations_menu(players, central_fcombination, bot_fcombinations)
+            display_combinations_menu(player_names,
+                                      human_players,
+                                      bot_players,
+                                      central_fcombination,
+                                      people_fcombinations,
+                                      bot_fcombinations)
         case 'u':
             if len(history) > 0:
                 history.pop()
