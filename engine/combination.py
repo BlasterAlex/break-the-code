@@ -2,7 +2,7 @@
 
 
 from typing import Tuple
-import utils as ut
+import engine.utils as ut
 
 
 def combination_to_fcombination(combination: Tuple[str, ...]) -> Tuple[int, ...]:
@@ -30,3 +30,12 @@ def fcombination_to_colors(fcombination: Tuple[int, ...]) -> Tuple[str, ...]:
     return tuple('b' if ftile in ut.BLACK_FTILES else
                  'w' if ftile in ut.WHITE_FTILES else
                  'g' for ftile in fcombination)
+
+
+def fcombination_replace_five_tile(fcombination: Tuple[int, ...]) -> Tuple[int, ...]:
+    """Return fcombination with 5 tile replaced by a paired tile."""
+    if 10 in fcombination and 11 not in fcombination:
+        f_list = list(fcombination)
+        f_list[f_list.index(10)] = 11
+        fcombination = tuple(f_list)
+    return fcombination
