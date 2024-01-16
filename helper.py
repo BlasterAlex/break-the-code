@@ -38,13 +38,13 @@ while True:
                 hint_results = []
 
                 num_opponent_combs_before = [len(opponent_combs) for opponent_combs in board.get_opponents_fcombinations()]                                
-                for opponent, hint_result in enumerate(hint[1]):
+                for opponent, hint_result in hint[1]:
                     board.apply_hint(hint_name, hint_result, opponent)
 
-                for opponent, hint_result in enumerate(hint[1]):
+                for opponent, hint_result in hint[1]:
                     num_opponent_combs_after = len(board.get_opponent_fcombinations(opponent))
                     improvement = num_opponent_combs_before[opponent] - num_opponent_combs_after
-                    hint_results.append((hint_result, improvement))
+                    hint_results.append((opponent, hint_result, improvement))
 
                 hints.append((hint_name, hint_results))
                 simulations = []
@@ -67,8 +67,10 @@ while True:
                 simulations = []
             board = bd.Board(fcombination, players)
             for hint in hints:
-                for opponent, res in enumerate(hint[1]):
-                    board.apply_hint(hint[0], res[0], opponent)
+                hint_name = hint[0]
+                for hint_results in hint[1]:
+                    opponent, hint_result = hint_results[:2]
+                    board.apply_hint(hint_name, hint_result, opponent)
         case 'q':
             really = input('Really quit? Press \'y\' to quit, anything else to go back: ')
             if really.lower() == 'y':

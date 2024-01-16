@@ -168,7 +168,7 @@ def get_fcombination_positions(fcombinations: List[Tuple[int, ...]], players: in
 def display_main_menu(our_fcombination: Tuple[int, ...],
                       central_fcombinations: List[Tuple[int, ...]],
                       opponents_fcombinations: List[List[Tuple[int, ...]]],
-                      hints: List[Tuple[str, List[Tuple[str, int]]]],
+                      hints: List[Tuple[str, List[Tuple[int, str, int]]]],
                       simulations: List[Tuple[str, Tuple[float, float]]]) -> str:
     """Display the main menu and return a valid user choice."""
     choice = None
@@ -225,8 +225,12 @@ def display_main_menu(our_fcombination: Tuple[int, ...],
         else:
             print('\nCurrent hints:')
             for hint in hints:
-                results = ', '.join(f'{hint_result_as_str(r[0])} (-{r[1]} combinations)' for r in hint[1])
-                print('- ' + ut.HINTS[hint[0]]['description'] + f': {results}')
+                hint_name, results = hint
+                if players == 2:
+                    hint_results = ', '.join(f'{hint_result_as_str(r[1])} (-{r[2]} combinations)' for r in results)
+                else:
+                    hint_results = ', '.join(f'#{r[0]+1} {hint_result_as_str(r[1])} (-{r[2]} combs)' for r in results)                
+                print('- ' + ut.HINTS[hint_name]['description'] + f': {hint_results}')
 
         if len(simulations) == 0:
             print('\nNo simulation data (or the data is outdated)')
@@ -249,8 +253,45 @@ def display_main_menu(our_fcombination: Tuple[int, ...],
     return choice
 
 
-def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[str, ...]]] | None:
+def display_players_menu(players: int = 2) -> int | None:
+    """Display the player selection menu and return the player number."""      
+    clear_screen()
+    print(TITLE)
+    print('Select player whose turn it is:')
+
+    print('(0) Current player')
+    for opponent in range(1, players):
+        print(f'({opponent}) Opponent #{opponent}')
+    print('(q) Go back\n')
+
+    while True:    
+        choice = input('Choose player: ')
+        if choice == 'q':
+            return None
+
+        try:
+            choice = int(choice)
+        except ValueError:
+            print(f'Error: Value \'{choice}\' must be an integer')
+            continue
+
+        if not 0 <= choice < players:
+            print('Error: Enter the correct player')
+            continue
+        
+        return choice-1
+
+
+def display_hints_menu(players: int = 2) -> Tuple[str, List[Tuple[int, int | str | Tuple[str, ...]]]] | None:
     """Display the hints menu and return a valid hint and result."""
+    opponents = list(range(players-1))
+    if players == 3:
+        player = display_players_menu(players)
+        if player is None:
+            return None
+        if player in opponents:
+            opponents.remove(player)
+
     choice = None
     while True:
         clear_screen()
@@ -263,13 +304,10 @@ def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[st
             break
 
     subchoices = []
-    for opponent in range(players-1):
+    for opponent in opponents:
         subchoice = ''  # type: int | str | Tuple[str, ...]
 
-        input_prefix = ''
-        if players > 2:
-            input_prefix = f'Opponent #{opponent+1}: '
-
+        input_prefix = '' if players == 2 else f'Opponent #{opponent+1}: '
         match choice:
             case _ as choice if choice in ('st', 'sb', 'sw', 'sl', 'sr', 'sc',
                                            'te', 'to', 'tb', 'tw', 'ts', 'd'):
@@ -325,7 +363,7 @@ def display_hints_menu(players: int = 2) -> Tuple[str, List[int | str | Tuple[st
             case 'q':
                 return None
 
-        subchoices.append(subchoice)
+        subchoices.append((opponent, subchoice))
 
     return (choice, subchoices)
 

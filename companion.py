@@ -69,9 +69,7 @@ def ask_player_fcombinations(players: int = 2, people: int = 1) -> List[Tuple[in
                 if 10 in fcombination and 11 not in fcombination:
                     for fcomb in fcombinations:
                         if 10 in fcomb:
-                            f_list = list(fcombination)
-                            f_list[f_list.index(10)] = 11
-                            fcombination = tuple(f_list)
+                            fcombination = cb.fcombination_replace_five_tile(fcombination)
                             break
 
                 fcomb_intersections = set.intersection(
@@ -160,12 +158,9 @@ def display_main_menu(players: int,
     return choice
 
 
-def display_player_menu(player_names: Tuple[str, ...],
-                        out_of_the_game: Set[int]) -> int | None:
-    """Display the player selection menu."""   
-    if len(player_names) == 2:
-        return player_names[0]
-    
+def display_players_menu(player_names: Tuple[str, ...],
+                         out_of_the_game: Set[int]) -> int | None:
+    """Display the player selection menu and return the player number."""   
     mn.clear_screen()
     print(TITLE)
     print('Select player whose turn it is:')
@@ -190,7 +185,7 @@ def display_player_menu(player_names: Tuple[str, ...],
             continue
 
         if not 0 < choice <= len(players_in_game):
-            print('Error: Enter the correct player number')
+            print('Error: Enter the correct player')
             continue
         
         return players_in_game[choice-1]
@@ -254,10 +249,7 @@ def display_combinations_menu(player_names: Tuple[str, ...],
 
         # Case central combination has one 5 tile
         if 11 in central_fcombination and 10 not in central_fcombination:
-            if 10 in fcombination and 11 not in fcombination:
-                f_list = list(fcombination)
-                f_list[f_list.index(10)] = 11
-                fcombination = tuple(f_list)
+            fcombination = cb.fcombination_replace_five_tile(fcombination)
 
         if fcombination == central_fcombination:
             print('✅ You\'re correct')
@@ -337,7 +329,7 @@ while True:
             out_of_the_game, winning_players = set(out), set(win)
 
             # Getting the number of player whose turn it is
-            player = display_player_menu(player_names, out_of_the_game)
+            player = display_players_menu(player_names, out_of_the_game)
             if player is None:
                 continue
             

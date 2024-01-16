@@ -6,6 +6,7 @@ import itertools
 import statistics
 from typing import List, Tuple
 import engine.utils as ut
+import engine.combination as cb
 
 
 class Board:
@@ -56,8 +57,11 @@ class Board:
         if len(known_tiles) == 0:
             return fcombinations
         
-        filtered_fcombinations = []            
+        filtered_fcombinations = []  
+        replace_five = 10 in known_tiles and 11 not in known_tiles        
         for fcombination in fcombinations:
+            if replace_five:
+                fcombination = cb.fcombination_replace_five_tile(fcombination)
             for matched_tile in known_tiles:
                 if matched_tile in fcombination:
                     break
