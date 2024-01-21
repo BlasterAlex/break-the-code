@@ -280,7 +280,8 @@ def bot_makes_a_move(bot_games: List[bd.Board],
     bot_game = bot_games[bot_players.index(player)]
     if len(bot_game.get_central_fcombinations()) == 1:
         hint = WINNING_MOVE
-    elif len(winning_players) > 0:
+    elif len(winning_players) > 0 or \
+            any(len(of) == 0 for of in bot_game.get_opponents_fcombinations()):
         hint = LOSING_MOVE
     else:
         bot_hints = display_bot_hints_menu(players)
